@@ -20,7 +20,18 @@ public class EmployeeDao {
         } catch (Exception e) {e.printStackTrace();return null;}}
 
 
-
+    public Employee authenticateEmployee(String name, Long employeeId) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // Query database to check if employee exists with provided name and ID
+            return (Employee) session.createQuery("FROM Employee WHERE name = :name AND employeeId = :employeeId")
+                    .setParameter("name", name)
+                    .setParameter("employeeId", employeeId)
+                    .uniqueResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     public void saveEmployee(Employee employee) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -76,5 +87,26 @@ public class EmployeeDao {
             return query.list();
         } catch (Exception e) {e.printStackTrace();return null;}}
 
+
+    public boolean isValidUser(String username, String password, Boolean isUser) {
+        Long number2 = Long.valueOf(password);
+        Long number1 = Long.valueOf(username);
+        if (isUser) {
+            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+                // Hibernate query to check if a user with the given username and password exists.
+                String hql = "FROM Employee WHERE id = :number1 AND id = :number2";
+                Query<Employee> query = session.createQuery(hql, Employee.class);
+                query.setParameter("number1", number1);
+                query.setParameter("number2", number2);
+                // Return true if a user is found, false otherwise.
+                return query.uniqueResult() != null;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+
+        } else
+            return false;
+    }
 
 }
