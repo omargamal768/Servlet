@@ -40,13 +40,17 @@ public class EmployeeServlet  extends HttpServlet{
         }
 
     }
-
     private void getEmployeeById(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        Long employeeId = Long.parseLong(request.getParameter("id"));
+        Employee employee = employeeDao.getEmployeeById(employeeId);
+        if (!isUserAuthenticatedEmployee(request,employeeId)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Unauthorized access");
+            return;
+        }
         try {
-            Long employeeId = Long.parseLong(request.getParameter("id"));
-            Employee employee = employeeDao.getEmployeeById(employeeId);
+
             if (employee != null) {
-                // Convert employee object to JSON and send as response
                 response.setContentType("application/json");
                 response.setCharacterEncoding("UTF-8");
                 response.getWriter().write(new Gson().toJson(employee));
@@ -90,6 +94,8 @@ public class EmployeeServlet  extends HttpServlet{
         // Write response
         response.getWriter().println("Employee created successfully");
     }
+
+
 
     private Employee getEmployeeObject(HttpServletRequest request) {
         BufferedReader reader = null;
@@ -162,11 +168,35 @@ public class EmployeeServlet  extends HttpServlet{
         }
         return false; // Authorization header missing or invalid
     }
+    private boolean isUserAuthenticatedEmployee(HttpServletRequest request,long id) {
+        String authorizationHeader = request.getHeader("Authorization");
+        if (authorizationHeader != null && authorizationHeader.startsWith("Basic ")) {
+            String base64Credentials = authorizationHeader.substring("Basic ".length()).trim();
+            String credentials = new String(Base64.getDecoder().decode(base64Credentials), StandardCharsets.UTF_8);
+            String[] parts = credentials.split(":", 2);
+            String username = parts[0];
+            String password = parts[1];
+            boolean isEqual = username.equals(Long.toString(id));
+            boolean isEqual2 = password.equals(Long.toString(id));
+            boolean u;
+            if (isEqual&&isEqual2){
+                u = true;
+            }else
+                u=false;
+            return isValidEmployee(username, password,u);
+        }
+        return false; // Authorization header missing or invalid
+    }
 
     // Helper method to validate admin credentials using database check
     private boolean isValidAdmin(String username, String password) {
         return hrDao.isValidUser(username, password);
     }
+    private boolean isValidEmployee(String username, String password, Boolean isUser) {
+        return employeeDao.isValidUser(username, password, isUser);
+    }
+
+
     public void destroy() {
     }
 }
